@@ -55,7 +55,7 @@ public class QuoteService
     private QuoteResponseDto convertFromQuote(Quote quote)
     {
         return new QuoteResponseDto(
-            quote.bookId,
+            quote.id,
             quote.quote
         );
     }
@@ -101,6 +101,9 @@ public class QuoteService
     private async Task<Quote> updateQuote(QuoteAlterRequestDto dto, int personId)
     {
         Quote? quoteToUpdate = await context.quotes.FindAsync(dto.quoteId);
+
+        Console.WriteLine(quoteToUpdate.quote);
+
         if(quoteToUpdate == null)
         {
             throw new QuoteNotFoundException("Cannot update a quote that does not exist");

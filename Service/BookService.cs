@@ -8,11 +8,10 @@ public class BookService{
         this.context = context;
     }
 
-    public Task<List<BookResponseDto>> getAllBooks()
+    public async Task<List<BookResponseDto>> getAllBooks()
     {
-        return context.books
-            .Select(book => convertToBookDto(book))
-            .ToListAsync();
+        List<Book> fetchedBooks = await context.books.ToListAsync();
+        return fetchedBooks.Select(book => convertToBookDto(book)).ToList();    
     }
 
     public async Task<BookResponseDto> addBook(BookCreateRequestDto dto)

@@ -1,11 +1,11 @@
 public class QuoteResponseDto
 {
-    public int bookId{ get; set; }
+    public int quoteId{ get; set; }
     public String quote{ get; set; }
 
-    public QuoteResponseDto(int bookId, String quote)
+    public QuoteResponseDto(int quoteId, String quote)
     {
-        this.bookId = bookId;
+        this.quoteId = quoteId;
         this.quote = quote;
     }
 }
