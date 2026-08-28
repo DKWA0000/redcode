@@ -21,7 +21,7 @@ public class PersonController : ControllerBase
     [HttpPost("loginuser")]
     public async Task<IActionResult> loginUser([FromBody] LoginUserDto dto)
     {
-        service.loginUser(dto);
+        await service.loginUser(dto);
         return Ok();
     }
 

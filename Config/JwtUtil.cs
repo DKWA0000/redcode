@@ -46,36 +46,56 @@ public class JwtUtil
     return tokenHandler.WriteToken(token);
 }
 
-    public ClaimsPrincipal getClaimsFromToken(String token)
+    public ClaimsPrincipal? getClaimsFromToken(string token) // Ändrat returtyp till nullable (?) för modern C#
+{
+    var tokenValidationParameters = new TokenValidationParameters
     {
-          var tokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = false 
-        };
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)), // 💡 Dubbelkolla att du inte använde Encoding.UTF8 vid genereringen!
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = false, 
+        ClockSkew = TimeSpan.Zero
+    };
 
-        var tokenHandler = new JwtSecurityTokenHandler();
+    var tokenHandler = new JwtSecurityTokenHandler();
+    
+    try
+    {
+        // ValidateToken läser ut alla claims och lägger dem i ett ClaimsPrincipal
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
         
-        try
+        // 🌟 ÄNDRING 1: Vi mjukar upp algoritms-kollen lite eller tar bort den tillfälligt under testet, 
+        // då utgångna tokens ibland kan ändra hur headern tolkas i .NET Core.
+        if (securityToken is JwtSecurityToken jwtSecurityToken)
         {
-            // ValidateToken läser ut alla claims och lägger dem i ett ClaimsPrincipal (user)
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-            
-            // En extra säkerhetskoll: Säkerställ att det är en äkta JWT (HMAC SHA256) och inte en fejkad sträng
-            if (securityToken is not JwtSecurityToken jwtSecurityToken || 
-                !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+            var alg = jwtSecurityToken.Header.Alg;
+            if (!alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase) &&
+                !alg.Equals("HS256", StringComparison.InvariantCultureIgnoreCase)) // .NET använder ibland "HS256" kortform
             {
+                Console.WriteLine($"[JWT WARN] Ogiltig algoritm hittades: {alg}");
                 return null;
             }
-
-            return principal;
         }
-        catch
+        else
         {
-            return null; 
+            Console.WriteLine("[JWT WARN] securityToken var inte en giltig JwtSecurityToken.");
+            return null;
         }
+
+        return principal;
     }
+    catch (Exception ex)
+    {
+        // 🌟 ÄNDRING 2: Skriv ut det exakta undantaget i terminalen! 
+        // Detta avslöjar direkt om det är fel på nyckeln, signaturen eller formatet.
+        Console.WriteLine($"[JWT ERROR] Sökning i getClaimsFromToken misslyckades: {ex.Message}");
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine($"[JWT INNER ERROR] {ex.InnerException.Message}");
+        }
+        return null; 
+    }
+}
+
 }

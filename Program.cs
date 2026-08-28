@@ -5,6 +5,18 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 🌐 1. DEFINIERA CORS-POLICY HÄR (Lägg till innan builder.Build())
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // Din Angular-app
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Viktigt eftersom din kod hanterar cookies!
+    });
+});
+
 // Create Api
 builder.Services.AddOpenApi();
 
@@ -46,9 +58,10 @@ builder.Services.AddAuthentication(options =>
     // --------------------------------------------------------------------
 });
 
-// Create Database
+// Create Database (MySQL)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<BookListContext>(options =>
-    options.UseInMemoryDatabase("BookListDatabase"));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // Add Services
 builder.Services.AddHttpContextAccessor();
@@ -77,6 +90,10 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// 🌐 2. AKTIVERA SPECIFIK CORS-POLICY HÄR
+// (Viktigt: Den måste ligga efter UseRouting/ExceptionHandler men INNAN UseAuthentication/Authorization)
+app.UseCors("AllowAngular");
 
 app.UseHttpsRedirection();
 
