@@ -65,6 +65,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Create Database (PostgreSQL)
 builder.Services.AddDbContext<BookListContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
