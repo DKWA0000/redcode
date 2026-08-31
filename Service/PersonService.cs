@@ -24,7 +24,13 @@ public class PersonService
         {
             throw new EmailAlreadyInUseException("The email provided is empty");
         }
+        //Check if the provided email is already in use
+        if(await context.persons.AnyAsync(e => e.email.ToLower() == dto.Email.ToLower()))
+        {
+            throw new EmailAlreadyInUseException("The email provided is aldready in use, please try again");
+        }
 
+        // Create new user
         Person tmp = new Person();
         tmp.email = dto.Email;       
         tmp.password = dto.Password; 
@@ -61,36 +67,35 @@ public class PersonService
     if (currentContext != null)
     {
         String? refreshToken = currentContext.Request.Cookies["Refresh-token"];
-        // 💡 Vi behöver inte längre tvinga fram Access-token!
         
         if (!string.IsNullOrEmpty(refreshToken))
         {
-            // 🌟 1. Slå upp din refresh-token i databasen för att hitta vem den tillhör
-            // (Justera namnet på tabellen 'refreshTokens' och fälten så de matchar din DB-kontext)
+            
+            // Get the current refresh-token
             var storedToken = await context.refreshTokens
                 .FirstOrDefaultAsync(t => t.token == refreshToken);
 
             if (storedToken != null)
             {
-                // 🌟 2. Kontrollera om din refresh-token fortfarande är giltig tidsmässigt
+                // Check if token is valid(has not expired )
                 double hoursLeft = await getRefreshTokenHoursLeft(refreshToken, storedToken.personId);
                 
                 if (hoursLeft > 0)
                 {
-                    // 🌟 3. Hämta personen direkt via det sparade PersonId:t i token-tabellen
+                    // Get the personId from the stored row in the refreshtoken table
                     Person? tmp = await context.persons.FindAsync(storedToken.personId);
                     if (tmp != null)
                     {
-                        // Generera en helt ny fungerande Access-token
+                        // Generate a new access-token
                         string newAccessToken = util.GenerateAccessToken(tmp);
                         appendAccessCookie(newAccessToken);
                         
-                        // Förnya din refresh-token om den håller på att gå ut (mindre än 24 timmar kvar)
+                        // Renew refresh-token if it expires in less than 24 hours
                         if (hoursLeft < 24)
                         {
                             await appendRefreshCookie(util.GenerateRefreshToken(), storedToken.personId);
                         }
-                        return; // 🚀 Succé! Allt klart, avbryt metoden.
+                        return;
                     }
                 }
                 throw new TokenExpiredException("Refresh token has expired, please login again");
@@ -103,11 +108,13 @@ public class PersonService
 
     private async Task<double> getRefreshTokenHoursLeft(String refreshToken, int personId)
     {
+        // Get the current refresh-token from db
         RefreshToken? refreshTokenFromDb = await context.refreshTokens
             .FirstOrDefaultAsync(r => r.personId == personId && r.token == refreshToken);
 
         if (refreshTokenFromDb != null)
         {
+            // Calculate hours left on the token
              return (refreshTokenFromDb.expires - DateTime.Now).TotalHours;    
         }
     
@@ -116,10 +123,12 @@ public class PersonService
 
     private async Task appendRefreshCookie(string refreshToken, int personId)
     {
+        // Get the current http-context
         HttpContext? currentContext = httpContext.HttpContext;
         if (currentContext == null) return;
         await addRefreshToken(refreshToken, personId);
 
+        // Add cookie-options for the http-only cookie
         CookieOptions refreshCookieOptions = new CookieOptions
         {
             HttpOnly = true,
@@ -127,14 +136,18 @@ public class PersonService
             SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddDays(7)
         };
+
+        // Append the cookie to the response
         currentContext.Response.Cookies.Append("Refresh-token", refreshToken, refreshCookieOptions);
     }
 
     private void appendAccessCookie(string accessToken)
     {
+        // Get the current http-context
         HttpContext? currentContext = httpContext.HttpContext;
         if (currentContext == null) return;
 
+        // Add cookie-options for the http-only cookie
         CookieOptions accessCookieOptions = new CookieOptions
         {
             HttpOnly = true,
@@ -143,9 +156,11 @@ public class PersonService
             Expires = DateTime.UtcNow.AddMinutes(30) 
         };
 
+        // Append the cookie to the response
         currentContext.Response.Cookies.Append("Access-token", accessToken, accessCookieOptions);
     }
 
+    // Method to add the refresh-token to the database
     private async Task addRefreshToken(String refreshtoken, int personId)
     {
         context.refreshTokens.Add(new RefreshToken(

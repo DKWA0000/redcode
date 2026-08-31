@@ -5,22 +5,21 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🌐 1. DEFINIERA CORS-POLICY HÄR (Lägg till innan builder.Build())
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // Din Angular-app
+        policy.WithOrigins("http://localhost:4200") 
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Viktigt eftersom din kod hanterar cookies!
+              .AllowCredentials(); 
     });
 });
 
 // Create Api
 builder.Services.AddOpenApi();
 
-// Lägg till jwt
+// Add jwt
 var jwtKey = "EnSäkerOchVäldigtLångNyckelHärSomÄrMinst32Tecken!";
 var key = Encoding.ASCII.GetBytes(jwtKey);
 
@@ -42,12 +41,10 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero 
     };
 
-    // ---- HÄR ÄR FIXEN: Säg till .NET att hämta token från din Cookie ----
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            // Kontrollera om cookien "Access-token" finns i anropet
             if (context.Request.Cookies.ContainsKey("Access-token"))
             {
                 context.Token = context.Request.Cookies["Access-token"];
@@ -55,13 +52,12 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };
-    // --------------------------------------------------------------------
 });
 
-// Create Database (MySQL)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<BookListContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+// Create Database (PostgreSQL)
+var connectionString = builder.Services.AddDbContext<BookListContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 // Add Services
 builder.Services.AddHttpContextAccessor();
@@ -69,9 +65,7 @@ builder.Services.AddScoped<PersonService>();
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<QuoteService>();
 
-// 🟢 1. REGISTRERA FELHANTERAREN HÄR
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-// Dölj stacktrace i ProblemDetails även om vi kör lokalt (Development)
 builder.Services.AddProblemDetails(options => 
 {
     options.CustomizeProblemDetails = ctx => ctx.ProblemDetails.Extensions.Remove("exception");
@@ -82,7 +76,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// 🟢 2. AKTIVERA DIN GLOBAL EXCEPTION HANDLER HÄR (Ska ligga först i pipelinen!)
+// Activate global exception handler
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
@@ -91,8 +85,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// 🌐 2. AKTIVERA SPECIFIK CORS-POLICY HÄR
-// (Viktigt: Den måste ligga efter UseRouting/ExceptionHandler men INNAN UseAuthentication/Authorization)
 app.UseCors("AllowAngular");
 
 app.UseHttpsRedirection();
@@ -101,5 +93,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<BookListContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

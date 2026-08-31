@@ -60,25 +60,30 @@ public class QuoteService
         );
     }
 
+    // Get the personId from the access-token
     private int getPersonId()
     {
-        
+        // Get the current httpContext
         HttpContext currentContext = httpContext.HttpContext;
 
         if(currentContext != null)
         {
+            // Get the access-token from the context
             String? accessToken = currentContext.Request.Cookies["Access-token"];
 
             if (!string.IsNullOrEmpty(accessToken))
             {
+                // Get the claims from the token
                 ClaimsPrincipal? principal = util.getClaimsFromToken(accessToken);
 
                 if (principal != null)
                 {
+                    // Get the personId from the token
                     string? personIdStr = principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
                     if (!string.IsNullOrEmpty(personIdStr) && int.TryParse(personIdStr, out int personId))
                     {
+                        // Return the Id
                         return personId;
                     }
                     throw new PersonNotFoundException("No corresponding user found, cannot continue");
