@@ -3,11 +3,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    Args = args
-});
+// 🌟 Skapa buildern med standardinställningar
+var builder = WebApplication.CreateBuilder(args);
 
+// Stäng av live-bevakning på konfigurationsfilerna efteråt för att spara Linux-resurser
 builder.Configuration.Sources.Clear();
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
@@ -20,7 +19,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:4200", 
-                "https://onrender.com" 
+                "https://redcode-frontend-zev2.onrender.com" // 🌟 Tillåt din skarpa frontend på Render
               ) 
               .AllowAnyHeader()
               .AllowAnyMethod()
@@ -66,6 +65,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// 🌟 Tvingar PostgreSQL-drivrutinen att automatiskt acceptera och konvertera DateTime till UTC
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Create Database (PostgreSQL)
 builder.Services.AddDbContext<BookListContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -106,6 +108,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// 🌟 Kör dina nya, rensade och synkade PostgreSQL-migreringar vid uppstart
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BookListContext>();
