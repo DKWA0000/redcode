@@ -1,4 +1,10 @@
-FROM ://microsoft.com AS build
+# Vi gömmer adresserna i variabler så att inga system klipper bort dem
+ARG REGISTRY=mcr.microsoft.com
+ARG REPO_SDK=dotnet/sdk:9.0
+ARG REPO_RUNTIME=dotnet/aspnet:9.0
+
+# 1. Bygg appen
+FROM ${REGISTRY}/${REPO_SDK} AS build
 WORKDIR /src
 
 COPY BookApi.csproj ./
@@ -7,7 +13,8 @@ RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /app
 
-FROM ://microsoft.com
+# 2. Kör appen
+FROM ${REGISTRY}/${REPO_RUNTIME}
 WORKDIR /app
 COPY --from=build /app .
 
