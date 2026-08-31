@@ -3,16 +3,21 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+// 🌟 FIXAT: Skapa en helt tom builder utan dolda Linux-filbevakare (inotify)
+var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
 {
     Args = args
 });
 
-builder.Configuration.Sources.Clear();
+// Lägg till baskonfiguration manuellt UTAN reloadOnChange
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
-    .AddEnvironmentVariables(); 
+    .AddEnvironmentVariables(); // Laddar dina Render-miljövariabler
+
+// 🌟 Manuell registrering av nödvändiga grundtjänster (krävs när CreateEmptyBuilder används)
+builder.Services.AddRouting();
+builder.Services.AddLogging(logging => logging.AddConsole());
 
 builder.Services.AddCors(options =>
 {
@@ -20,7 +25,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:4200", 
-                "https://onrender.com" 
+                "https://onrender.com" // Byt ut mot din exakta Render-URL sen
               ) 
               .AllowAnyHeader()
               .AllowAnyMethod()
