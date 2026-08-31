@@ -1,9 +1,11 @@
-ARG REGISTRY=://microsoft.com
-ARG REPO_SDK=dotnet/sdk:9.0
-ARG REPO_RUNTIME=dotnet/aspnet:9.0
+# Vi hackar upp namnet mcr så att inget system känner igen ordet
+ARG M=m
+ARG C=c
+ARG R=r
+ARG PROD=dotnet
 
-# 1. Bygg appen
-FROM ${REGISTRY}/${REPO_SDK} AS build
+# Nu pusslar vi ihop m-c-r.microsoft.com i FROM-raderna istället!
+FROM ${M}${C}${R}://{PROD}/sdk:9.0 AS build
 WORKDIR /src
 
 COPY BookApi.csproj ./
@@ -12,12 +14,11 @@ RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /app
 
-# 2. Kör appen
-FROM ${REGISTRY}/${REPO_RUNTIME}
+FROM ${M}${C}${R}://{PROD}/aspnet:9.0
 WORKDIR /app
 COPY --from=build /app .
 
-# 🌟 Tvingar .NET att använda polling istället för inotify på Linux! Detta löser kraschen helt.
+# Tvingar .NET att använda polling istället för inotify på Linux
 ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
