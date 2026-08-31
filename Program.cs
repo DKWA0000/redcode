@@ -104,10 +104,10 @@ app.UseAuthorization();
 app.MapControllers();
 
 // 🌟 Kör dina nya, rensade och synkade PostgreSQL-migreringar vid uppstart
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<BookListContext>();
-    db.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<BookListContext>();
+//    db.Database.Migrate();
+//}
 
 app.Run();
