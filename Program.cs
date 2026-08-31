@@ -69,7 +69,13 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Create Database (PostgreSQL)
 builder.Services.AddDbContext<BookListContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    
+    // Ber .NET 9 att ignorera PendingModelChangesWarning istället för att krascha appen
+    options.ConfigureWarnings(warnings => 
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+});
 
 // Add Services
 builder.Services.AddHttpContextAccessor();
