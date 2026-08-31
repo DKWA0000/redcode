@@ -1,5 +1,4 @@
-# Vi gömmer adresserna i variabler så att inga system klipper bort dem
-ARG REGISTRY=mcr.microsoft.com
+ARG REGISTRY=://microsoft.com
 ARG REPO_SDK=dotnet/sdk:9.0
 ARG REPO_RUNTIME=dotnet/aspnet:9.0
 
@@ -18,6 +17,8 @@ FROM ${REGISTRY}/${REPO_RUNTIME}
 WORKDIR /app
 COPY --from=build /app .
 
+# 🌟 Tvingar .NET att använda polling istället för inotify på Linux! Detta löser kraschen helt.
+ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
