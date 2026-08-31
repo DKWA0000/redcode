@@ -72,9 +72,8 @@ builder.Services.AddDbContext<BookListContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
     
-    // Ber .NET 9 att ignorera PendingModelChangesWarning istället för att krascha appen
-    options.ConfigureWarnings(warnings => 
-        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+    // 🌟 FIXAT: Vi använder det numeriska ID-numret 20104 istället för texten för att slippa kompileringsfelet
+    options.ConfigureWarnings(warnings => warnings.Ignore(20104));
 });
 
 // Add Services
