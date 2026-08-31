@@ -1,12 +1,9 @@
-# Vi hackar upp namnet mcr så att inget system känner igen ordet
-ARG M=m
-ARG C=c
-ARG R=r
-ARG PROD=dotnet
-
-# Nu pusslar vi ihop m-c-r.microsoft.com i FROM-raderna istället!
-FROM ${M}${C}${R}://{PROD}/sdk:9.0 AS build
+# Vi använder Ubuntus officiella spegling för .NET 9 istället för Microsofts server!
+FROM ubuntu:24.04 AS build
 WORKDIR /src
+
+# Installera .NET 9 SDK via Ubuntus pakethanterare
+RUN apt-get update && apt-get install -y dotnet-sdk-9.0
 
 COPY BookApi.csproj ./
 RUN dotnet restore
@@ -14,11 +11,16 @@ RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /app
 
-FROM ${M}${C}${R}://{PROD}/aspnet:9.0
+# Skapa slutgiltiga containern med Ubuntus .NET-runtime
+FROM ubuntu:24.04
 WORKDIR /app
+
+# Installera .NET 9 ASP.NET Core Runtime
+RUN apt-get update && apt-get install -y aspnetcore-runtime-9.0 && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app .
 
-# Tvingar .NET att använda polling istället för inotify på Linux
+# Tvingar .NET att inte använda inotify på Linux
 ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
