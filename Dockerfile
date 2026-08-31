@@ -1,9 +1,6 @@
-# Vi använder Ubuntus officiella spegling för .NET 9 istället för Microsofts server!
-FROM ubuntu:24.04 AS build
+# 1. Bygg appen med .NET 9 SDK från Amazon ECR
+FROM public.ecr.aws/sam/build-dotnet9:latest AS build
 WORKDIR /src
-
-# Installera .NET 9 SDK via Ubuntus pakethanterare
-RUN apt-get update && apt-get install -y dotnet-sdk-9.0
 
 COPY BookApi.csproj ./
 RUN dotnet restore
@@ -11,16 +8,12 @@ RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /app
 
-# Skapa slutgiltiga containern med Ubuntus .NET-runtime
-FROM ubuntu:24.04
+# 2. Kör appen med .NET 9 Runtime från GitHub Container Registry
+FROM ghcr.io/fluent-cms/aspnet:9.0
 WORKDIR /app
-
-# Installera .NET 9 ASP.NET Core Runtime
-RUN apt-get update && apt-get install -y aspnetcore-runtime-9.0 && rm -rf /var/lib/apt/lists/*
-
 COPY --from=build /app .
 
-# Tvingar .NET att inte använda inotify på Linux
+# Tvingar .NET att använda polling istället för inotify på Linux
 ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
