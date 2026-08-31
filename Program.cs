@@ -3,21 +3,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 
-// 🌟 FIXAT: Skapa en helt tom builder utan dolda Linux-filbevakare (inotify)
-var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
-{
-    Args = args
-});
+// 🌟 Tillbaka till standard-builder
+var builder = WebApplication.CreateBuilder(args);
 
-// Lägg till baskonfiguration manuellt UTAN reloadOnChange
+// Stäng av live-bevakning på konfigurationsfilerna efteråt
+builder.Configuration.Sources.Clear();
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
-    .AddEnvironmentVariables(); // Laddar dina Render-miljövariabler
-
-// 🌟 Manuell registrering av nödvändiga grundtjänster (krävs när CreateEmptyBuilder används)
-builder.Services.AddRouting();
-builder.Services.AddLogging(logging => logging.AddConsole());
+    .AddEnvironmentVariables();
 
 builder.Services.AddCors(options =>
 {
@@ -25,7 +19,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:4200", 
-                "https://onrender.com" // Byt ut mot din exakta Render-URL sen
+                "https://onrender.com"
               ) 
               .AllowAnyHeader()
               .AllowAnyMethod()
@@ -75,7 +69,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddDbContext<BookListContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
 // Add Services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<PersonService>();
@@ -93,22 +86,17 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Activate global exception handler
 app.UseExceptionHandler();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseCors("AllowAngular");
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
