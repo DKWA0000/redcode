@@ -46,12 +46,12 @@ public class JwtUtil
     return tokenHandler.WriteToken(token);
 }
 
-    public ClaimsPrincipal? getClaimsFromToken(string token) // Ändrat returtyp till nullable (?) för modern C#
+    public ClaimsPrincipal? getClaimsFromToken(string token) 
 {
     var tokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)), // 💡 Dubbelkolla att du inte använde Encoding.UTF8 vid genereringen!
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)), 
         ValidateIssuer = false,
         ValidateAudience = false,
         ValidateLifetime = false, 
@@ -62,16 +62,13 @@ public class JwtUtil
     
     try
     {
-        // ValidateToken läser ut alla claims och lägger dem i ett ClaimsPrincipal
         var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
         
-        // 🌟 ÄNDRING 1: Vi mjukar upp algoritms-kollen lite eller tar bort den tillfälligt under testet, 
-        // då utgångna tokens ibland kan ändra hur headern tolkas i .NET Core.
         if (securityToken is JwtSecurityToken jwtSecurityToken)
         {
             var alg = jwtSecurityToken.Header.Alg;
             if (!alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase) &&
-                !alg.Equals("HS256", StringComparison.InvariantCultureIgnoreCase)) // .NET använder ibland "HS256" kortform
+                !alg.Equals("HS256", StringComparison.InvariantCultureIgnoreCase)) 
             {
                 Console.WriteLine($"[JWT WARN] Ogiltig algoritm hittades: {alg}");
                 return null;
@@ -87,8 +84,6 @@ public class JwtUtil
     }
     catch (Exception ex)
     {
-        // 🌟 ÄNDRING 2: Skriv ut det exakta undantaget i terminalen! 
-        // Detta avslöjar direkt om det är fel på nyckeln, signaturen eller formatet.
         Console.WriteLine($"[JWT ERROR] Sökning i getClaimsFromToken misslyckades: {ex.Message}");
         if (ex.InnerException != null)
         {
