@@ -90,22 +90,17 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Activate global exception handler
 app.UseExceptionHandler();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseCors("AllowAngular");
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 // 🌟 Kör dina nya, rensade och synkade PostgreSQL-migreringar vid uppstart
