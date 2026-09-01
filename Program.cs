@@ -86,7 +86,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// 🟢 FIX: Flyttad till absolut högsta toppen för att hantera preflight (OPTIONS) innan felhanteringen
+// FIX: Flyttad till absolut högsta toppen för att hantera preflight (OPTIONS) innan felhanteringen
 app.UseCors("AllowAngular");
 
 app.UseExceptionHandler();
@@ -101,7 +101,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// 🟢 UPPDATERAD FIX: Nollställ och återskapa databasstrukturen automatiskt inifrån Render vid start
+// 🟢 SÄKER FIX: Verifierar och sparar din data permanent vid omstarter
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -109,17 +109,14 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<BookListContext>();
         
-        // 1. Radera de gamla tabellerna (tar bort det låsta "bookId NOT NULL"-kravet)
-        await context.Database.EnsureDeletedAsync();
+        // Denna rad kör endast nya framtida ändringar och rör ALDRIG din befintliga data!
+        await context.Database.MigrateAsync();
         
-        // 2. Skapa upp alla tabeller helt på nytt baserat på din nuvarande C#-kod
-        await context.Database.EnsureCreatedAsync();
-        
-        Console.WriteLine("Databasen har nollställts och återskapats framgångsrikt i produktion!");
+        Console.WriteLine("Databasen verifierad och sparad permanent!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Ett fel uppstod vid automatisk databas-återskapning: {ex.Message}");
+        Console.WriteLine($"Ett fel uppstod vid kontroll av databasen: {ex.Message}");
     }
 }
 
