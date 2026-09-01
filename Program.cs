@@ -101,4 +101,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// 🟢 NYTT: Automatisk databasuppdatering inifrån Render vid start
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<BookListContext>();
+        // Denna rad kör alla väntande migrationer direkt mot databasen
+        await context.Database.MigrateAsync();
+        Console.WriteLine("Databasen har uppdaterats framgångsrikt via automatiska migrationer!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Ett fel uppstod vid automatisk databas-migrering: {ex.Message}");
+    }
+}
+
 app.Run();
