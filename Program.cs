@@ -15,8 +15,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:4200", 
+        policy.WithOrigins( 
                 "https://redcode-frontend-zev2.onrender.com" 
               ) 
               .AllowAnyHeader()
@@ -87,6 +86,9 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// 🟢 FIX: Flyttad till absolut högsta toppen för att hantera preflight (OPTIONS) innan felhanteringen
+app.UseCors("AllowAngular");
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -94,7 +96,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AllowAngular");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -8,8 +8,10 @@ public class Book
     public string Author { get; set; }
     public DateTime Date { get; set; }
 
+    // En tom konstruktor krävs av EF Core
     public Book() {}
 
+    // Din egna konstruktor (valfri, men smidig)
     public Book(int id, string title, string author, DateTime date)
     {
         Id = id;

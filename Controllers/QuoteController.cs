@@ -14,10 +14,10 @@ public class QuoteController : ControllerBase
         this.service = service;
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> getAllQuotes([FromRoute] int id)
+    [HttpGet]
+    public async Task<IActionResult> getAllQuotes()
     {
-        List<QuoteResponseDto> books = await service.getAllQuotes(id);
+        List<QuoteResponseDto> books = await service.getAllQuotes();
         return Ok(books);
     }
 
