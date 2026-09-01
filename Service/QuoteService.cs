@@ -19,10 +19,10 @@ public class QuoteService
         this.httpContext = httpContextAccessor;
     }
 
-    public async Task<List<QuoteResponseDto>> getAllQuotes(int bookId)
+    public async Task<List<QuoteResponseDto>> getAllQuotes()
     {
         int personId = getPersonId();
-        List<Quote> quotes = await context.quotes.Where(quote => (quote.bookId == bookId) && quote.personId == personId) 
+        List<Quote> quotes = await context.quotes.Where(quote => quote.personId == personId) 
                     .ToListAsync();
 
         return quotes.Select(quote => convertFromQuote(quote)).ToList();            
@@ -31,7 +31,7 @@ public class QuoteService
     public async Task<QuoteResponseDto> createNewQuote(QuoteCreateRequestDto dto)
     {
         int personId = getPersonId();
-        if((await getAllQuotes(dto.bookId)).Count < 5)
+        if((await getAllQuotes()).Count < 5)
         {
             Quote quoteToAdd = addQuoteToDb(dto, personId);
             await context.SaveChangesAsync();
@@ -60,30 +60,25 @@ public class QuoteService
         );
     }
 
-    // Get the personId from the access-token
     private int getPersonId()
     {
-        // Get the current httpContext
+        
         HttpContext currentContext = httpContext.HttpContext;
 
         if(currentContext != null)
         {
-            // Get the access-token from the context
             String? accessToken = currentContext.Request.Cookies["Access-token"];
 
             if (!string.IsNullOrEmpty(accessToken))
             {
-                // Get the claims from the token
                 ClaimsPrincipal? principal = util.getClaimsFromToken(accessToken);
 
                 if (principal != null)
                 {
-                    // Get the personId from the token
                     string? personIdStr = principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
                     if (!string.IsNullOrEmpty(personIdStr) && int.TryParse(personIdStr, out int personId))
                     {
-                        // Return the Id
                         return personId;
                     }
                     throw new PersonNotFoundException("No corresponding user found, cannot continue");
@@ -97,7 +92,6 @@ public class QuoteService
     private Quote addQuoteToDb(QuoteCreateRequestDto dto, int personId)
     {
         Quote tmp = new Quote();
-        tmp.bookId = dto.bookId;
         tmp.personId = personId;
         tmp.quote = dto.quote;
         return context.quotes.Add(tmp).Entity;

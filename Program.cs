@@ -15,8 +15,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:4200", 
+        policy.WithOrigins( 
                 "https://redcode-frontend-zev2.onrender.com" 
               ) 
               .AllowAnyHeader()
@@ -87,6 +86,9 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// 🟢 FIX: Flyttad till absolut högsta toppen för att hantera preflight (OPTIONS) innan felhanteringen
+app.UseCors("AllowAngular");
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -94,10 +96,26 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AllowAngular");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// 🟢 NYTT: Automatisk databasuppdatering inifrån Render vid start
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<BookListContext>();
+        // Denna rad kör alla väntande migrationer direkt mot databasen
+        await context.Database.MigrateAsync();
+        Console.WriteLine("Databasen har uppdaterats framgångsrikt via automatiska migrationer!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Ett fel uppstod vid automatisk databas-migrering: {ex.Message}");
+    }
+}
 
 app.Run();
