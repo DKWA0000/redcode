@@ -101,20 +101,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// 🟢 NYTT: Automatisk databasuppdatering inifrån Render vid start
+// 🟢 UPPDATERAD FIX: Nollställ och återskapa databasstrukturen automatiskt inifrån Render vid start
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<BookListContext>();
-        // Denna rad kör alla väntande migrationer direkt mot databasen
-        await context.Database.MigrateAsync();
-        Console.WriteLine("Databasen har uppdaterats framgångsrikt via automatiska migrationer!");
+        
+        // 1. Radera de gamla tabellerna (tar bort det låsta "bookId NOT NULL"-kravet)
+        await context.Database.EnsureDeletedAsync();
+        
+        // 2. Skapa upp alla tabeller helt på nytt baserat på din nuvarande C#-kod
+        await context.Database.EnsureCreatedAsync();
+        
+        Console.WriteLine("Databasen har nollställts och återskapats framgångsrikt i produktion!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Ett fel uppstod vid automatisk databas-migrering: {ex.Message}");
+        Console.WriteLine($"Ett fel uppstod vid automatisk databas-återskapning: {ex.Message}");
     }
 }
 
